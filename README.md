@@ -173,7 +173,7 @@ supervisor.slots.ports:
 
 访问http://192.168.100.220:9088/ 控制台
 
-#提交作业到集群
+#提交作业到集群 源码：https://github.com/lennyhuanga/stormapps
 ./storm jar storm-helloworld-0.0.1-SNAPSHOT.jar com.roncoo.eshop.storm.WordCountTopology WordCountTopology
 #杀掉拓扑
 ./storm kill WordCountTopology

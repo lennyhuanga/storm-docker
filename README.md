@@ -73,37 +73,49 @@ RUN mv /tmp/zoo.cfg $ZOO_HOME/conf/zoo.cfg && \
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 
-1、制作strom镜像
+#1、制作strom镜像
+
 docker build -t lenny/strom:2.1 .
-2、启动容器一个nimbus 2个supervisor 。三个节点均启动zookeeper
+
+#2、启动容器一个nimbus 2个supervisor 。三个节点均启动zookeeper
+
 docker run -itd  -p 9088:8080  -p 6627:6627 -p 3181:2181 -p 8123:8000 --restart=always --name strom-nimbus --hostname strom-nimbus lenny/strom:2.1 &> /dev/null
 docker run -itd  -p 9088:8080  -p 6627:6627 -p 3181:2181 -p 8123:8000 --restart=always --name strom-supervisor1 --hostname strom-supervisor1 lenny/strom:2.1 &> /dev/null
 docker run -itd  -p 9088:8080  -p 6627:6627 -p 3181:2181 -p 8123:8000 --restart=always --name strom-supervisor2 --hostname strom-supervisor2 lenny/strom:2.1 &> /dev/null
-3、修改三台机器的hosts ，使其互通
+
+#3、修改三台机器的hosts ，使其互通
+
 docker inspect strom-nimbus | grep IPAddress | awk 'NR==2 {print $0}'
 docker inspect strom-supervisor1 | grep IPAddress | awk 'NR==2 {print $0}'
 docker inspect strom-supervisor2 | grep IPAddress | awk 'NR==2 {print $0}'
+
+#修改hosts文件，可以在制作容器的时候直接加上
 run_hosts.sh
 #!/bin/bash
 echo 192.168.2.199 strom-nimbus >> /etc/hosts
 echo 192.168.2.135 strom-supervisor1 >> /etc/hosts
 echo 192.168.2.70 strom-supervisor2 >> /etc/hosts
 
-4、分别在每台机器上配置好zookeeper
-1）首先  source /etc/profile 使java命令生效
+#4、分别在每台机器上配置好zookeeper
+
+#1）首先  source /etc/profile 使java命令生效
+
 nimbus节点 echo "1" >> /usr/local/zookeeper/data/myid
 supervisor1节点 echo "2" >> /usr/local/zookeeper/data/myid
 supervisor2节点 echo "3" >> /usr/local/zookeeper/data/myid
 
-2）然后
-修改Zookeeper配置文件zoo.cfg
-3）
-分别启动3个节点上的zookeeper 并查看状态 bin/zkServer.sh start 查看zookeeper的状态 bin/zkServer.sh status
-4）最后验证zookeeper集群
+#2）然后修改Zookeeper配置文件zoo.cfg 已经在Dockerfile中直接处理
+
+#3）分别启动3个节点上的zookeeper 并查看状态 bin/zkServer.sh start 查看zookeeper的状态 bin/zkServer.sh status
+
+#4）最后验证zookeeper集群
+
 bin/zkCli.sh -server strom-nimbus:2181
 
-5）配置并启动storm，修改conf/storm.yaml    2.1版本后nimbus.seeds 代替nimbus.hosts
+#5）配置并启动storm，修改conf/storm.yaml    2.1版本后nimbus.seeds 代替nimbus.hosts
+
 #nimbus：
+
 storm.zookeeper.servers:
      - "strom-nimbus"
      - "strom-supervisor1"
@@ -116,7 +128,9 @@ supervisor.slots.ports:
      - 6702
      - 6703
 ui.port: 8080
+
 #supervisor1:
+
 storm.zookeeper.servers:
      - "strom-nimbus"
      - "strom-supervisor1"
@@ -128,7 +142,9 @@ supervisor.slots.ports:
      - 6701
      - 6702
      - 6703
+	 
 #supervisor2:
+
 storm.zookeeper.servers:
      - "strom-nimbus"
      - "strom-supervisor1"
@@ -143,11 +159,14 @@ supervisor.slots.ports:
 
 
 #nimbus：启动ui，nimbus和supervisor
+
 ./storm ui > /dev/null 2>&1 &
 ./storm nimbus > /dev/null 2>&1 &
 ./storm logviewer > /dev/null 2>&1 &
 ./storm supervisor > /dev/null 2>&1 &
+
 #supervisor：启动supervisor 和logviewer
+
 ./storm logviewer > /dev/null 2>&1 &
 ./storm supervisor > /dev/null 2>&1 &
 
